@@ -214,6 +214,7 @@ bool ClearPiDDBCash(PDRIVER_OBJECT driverObject)
 
 }
 
+//credit to nbq 
 bool null_pfn(ULONG64 pool_address, ULONG pool_size) //working but missing some shit header
 {
     PMDL poolMdl = IoAllocateMdl((PVOID)pool_address, pool_size, 0, 0, 0);
