@@ -181,25 +181,3 @@ NTSTATUS RemoveKernelHashBucketListEntry(PDRIVER_OBJECT driverObject)
 	return STATUS_SUCCESS;
 }
 
-
-//mm unloaded drivers
-
-typedef struct _KLDR_DATA_TABLE_ENTRY {
-	LIST_ENTRY InLoadOrderLinks;
-	PVOID ExceptionTable;
-	ULONG ExceptionTableSize;
-	PVOID GpValue;
-	PVOID NonPagedDebugInfo;
-	PVOID DllBase;
-	PVOID EntryPoint;
-	ULONG SizeOfImage;
-	UNICODE_STRING FullDllName;
-	UNICODE_STRING BaseDllName;
-	ULONG Flags;
-	USHORT LoadCount;
-	USHORT __Unused;
-	PVOID SectionPointer;
-	ULONG CheckSum;
-	PVOID LoadedImports;
-	PVOID PatchInformation;
-} KLDR_DATA_TABLE_ENTRY, * PKLDR_DATA_TABLE_ENTRY;
