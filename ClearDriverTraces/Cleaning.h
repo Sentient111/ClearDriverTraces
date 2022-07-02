@@ -1,13 +1,16 @@
-#include "misc.h"
-
+#pragma once
+#include "Misc.h"
 
 //21h1, you can get these from ida
-ULONG PiDDBCacheTableOffset = 0xD2F000; 
+ULONG PiDDBCacheTableOffset = 0xD2F000;
 ULONG PiDDBLockOffset = 0xC44940;
 
 ULONG g_KernelHashBucketListOffset = 0xBC080;
 ULONG g_HashCacheLockOffset = 0x37F20;
 
+ULONG g_CiEaCacheLookasideListOffset = 0x38400;
+
+#pragma region MmUnloadedDrivers
 
 typedef struct _KLDR_DATA_TABLE_ENTRY {
 	LIST_ENTRY InLoadOrderLinks;
@@ -31,8 +34,12 @@ typedef struct _KLDR_DATA_TABLE_ENTRY {
 
 void RemoveMmUnloadedDrivers(PDRIVER_OBJECT driverObject)
 {
-    reinterpret_cast<PKLDR_DATA_TABLE_ENTRY>(driverObject->DriverSection)->BaseDllName.Length = 0; // when unloading the driver no entry is added because a check fails
+	reinterpret_cast<PKLDR_DATA_TABLE_ENTRY>(driverObject->DriverSection)->BaseDllName.Length = 0; // mm unloaded drivers entry is not created if base dll name is 0
 }
+
+#pragma endregion
+
+#pragma region PiDDBCacheTable
 
 typedef struct PiDDBCacheEntry
 {
@@ -111,6 +118,9 @@ NTSTATUS RemovePiDDBCacheTableEntry(PDRIVER_OBJECT driverObject)
 	ExReleaseResourceLite(PiDDBLock);
 	return STATUS_SUCCESS;
 }
+#pragma endregion
+
+#pragma region HashBucketList
 
 typedef struct _HashBucketEntry
 {
@@ -121,7 +131,7 @@ typedef struct _HashBucketEntry
 
 NTSTATUS RemoveKernelHashBucketListEntry(PDRIVER_OBJECT driverObject)
 {
-	UINT64 cidllBase = GetKernelModuleBase(skCrypt("CI.dll"));
+	UINT64 cidllBase = GetKernelModuleBase("CI.dll");
 	if (!cidllBase)
 	{
 		Print("failed to get ci base\n");
@@ -181,3 +191,24 @@ NTSTATUS RemoveKernelHashBucketListEntry(PDRIVER_OBJECT driverObject)
 	return STATUS_SUCCESS;
 }
 
+#pragma endregion
+
+#pragma region LookasideList
+
+NTSTATUS DeleteCiEaCacheLookasideList()
+{
+	UINT64 cidllBase = GetKernelModuleBase("CI.dll");
+	if (!cidllBase)
+	{
+		Print("failed to get ci base\n");
+		return STATUS_UNSUCCESSFUL;
+	}
+
+
+	PLOOKASIDE_LIST_EX g_CiEaCacheLookasideList = (PLOOKASIDE_LIST_EX)(cidllBase + g_CiEaCacheLookasideListOffset);
+	ULONG size = g_CiEaCacheLookasideList->L.Size;
+	ExDeleteLookasideListEx(g_CiEaCacheLookasideList);
+	ExInitializeLookasideListEx(g_CiEaCacheLookasideList, NULL, NULL, PagedPool, 0, size, 'csIC', 0);
+}
+
+#pragma endregion
